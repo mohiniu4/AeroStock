@@ -1,0 +1,96 @@
+name: Server Tests
+
+on:
+  push:
+    branches:
+      - master
+      - server-core
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        configuration: [Debug]
+        platform: [x64]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Find solution file
+        id: find_solution
+        shell: pwsh
+        run: |
+          $solution = Get-ChildItem -Path . -Recurse -Include *.slnx,*.sln |
+            Select-Object -First 1
+
+          if (-not $solution) {
+            throw "No solution file (.slnx or .sln) was found."
+          }
+
+          Write-Host "Using solution: $($solution.FullName)"
+          echo "solution=$($solution.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Build solution
+        shell: pwsh
+        run: |
+          msbuild "${{ steps.find_solution.outputs.solution }}" `
+            /p:Configuration=${{ matrix.configuration }} `
+            /p:Platform=${{ matrix.platform }} `
+            /m
+
+      - name: Find Server.Tests DLL
+        id: find_test_dll
+        shell: pwsh
+        run: |
+          $testDll = Get-ChildItem -Path . -Recurse -Filter "Server.Tests.dll" |
+            Where-Object {
+              $_.FullName -match "\\${{ matrix.configuration }}\\" -and
+              $_.FullName -match "\\${{ matrix.platform }}\\"
+            } |
+            Select-Object -First 1
+
+          if (-not $testDll) {
+            throw "Server.Tests.dll was not found."
+          }
+
+          Write-Host "Using test DLL: $($testDll.FullName)"
+          echo "testdll=$($testDll.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Find vstest.console.exe
+        id: find_vstest
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+
+          if (-not (Test-Path $vswhere)) {
+            throw "vswhere.exe was not found."
+          }
+
+          $installationPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.PackageGroup.TestTools.Core -property installationPath
+
+          if (-not $installationPath) {
+            throw "Visual Studio installation with Test Tools was not found."
+          }
+
+          $vstestPath = Join-Path $installationPath "Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe"
+
+          if (-not (Test-Path $vstestPath)) {
+            throw "vstest.console.exe was not found at expected path: $vstestPath"
+          }
+
+          Write-Host "Using vstest.console.exe: $vstestPath"
+          echo "vstest=$($vstestPath)" >> $env:GITHUB_OUTPUT
+
+      - name: Run Server.Tests
+        shell: pwsh
+        run: |
+          & "${{ steps.find_vstest.outputs.vstest }}" "${{ steps.find_test_dll.outputs.testdll }}"

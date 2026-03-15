@@ -1,0 +1,16 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Client.Core/Client.Core.vcxproj" Id="1df2279b-505f-4ed4-9fa9-dd5658adb3c5" />
+  <Project Path="Client.Tests/Client.Tests.vcxproj" />
+  <Project Path="Client/Client.vcxproj" Id="8c793a10-dc0d-421b-b5c0-636c49713bdd" />
+  <Project Path="Common.Tests/Common.Tests.vcxproj" />
+  <Project Path="Common/Common.vcxproj" Id="74915657-e020-4c72-8ed6-76a5498f0f30" />
+  <Project Path="Integration.Tests/Integration.Tests.vcxproj" />
+  <Project Path="Server.Core/Server.Core.vcxproj" Id="1f098487-2f90-416c-8b1e-4704dd5d694a" />
+  <Project Path="Server.Tests/Server.Tests.vcxproj" />
+  <Project Path="Server/Server.vcxproj" Id="2b8b86a3-1651-4e12-acf8-d2225068a124" />
+</Solution>
